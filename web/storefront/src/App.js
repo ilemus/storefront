@@ -6,7 +6,7 @@ function App() {
   return (
     <div>
     <CssBaseline />
-    <PrimarySearchAppBar />
+    <PrimarySearchAppBar searchEnabled={false} />
     <div>
       <p>
         Here is my content.<br />
