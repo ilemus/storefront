@@ -56,7 +56,14 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
+/**
+ * Feature toggles:
+ * searchEnabled
+ * mailEnabled
+ * notificationsEnabled
+ */
 export default function PrimarySearchAppBar(props) {
+
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
 

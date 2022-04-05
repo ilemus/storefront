@@ -1,6 +1,7 @@
 import { CssBaseline } from '@mui/material';
 import './App.css';
 import PrimarySearchAppBar from './components/Titlebar';
+import ItemCard from './components/ItemCard';
 
 function App() {
   return (
@@ -8,10 +9,7 @@ function App() {
     <CssBaseline />
     <PrimarySearchAppBar searchEnabled={false} />
     <div>
-      <p>
-        Here is my content.<br />
-        Here is more of it.
-      </p>
+      <ItemCard title="My Title" description="This is a longer description\nmaybe with two lines??" />
     </div>
     </div>
   );
