@@ -1,19 +1,19 @@
-from pydantic import BaseSettings
-from dataclasses import dataclass
+from pydantic import BaseModel, BaseSettings
 
-@dataclass
-class MySQLConnection:
+class MySQLConnection(BaseModel):
     hostname: str = 'adminer'
     port: int = 8080
     username: str = 'webapp'
-    password: str = 'webbapp_secret_password'
-
-mysql_conn = MySQLConnection()
+    password: str = 'test_wrong_password'
+    database: str = 'storefront'
 
 
 class Settings(BaseSettings):
-    mysql: MySQLConnection = mysql_conn
-    connect_to_database: bool = False
+    mysql: MySQLConnection = ()
+    connect_to_database: int = 0
+
+    class Config:
+        env_nested_delimiter = '__'
 
 
 settings = Settings()

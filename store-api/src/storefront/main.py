@@ -1,17 +1,25 @@
 import asyncio
+import logging
 import mysql.connector
+import os
+import sys
 
 from fastapi import FastAPI, Request
 from storefront.endpoints.search import search_router
 from storefront.config import settings
 
+logger = logging.getLogger(__name__)
+
 def create_app():
+    logging.basicConfig(format=logging.BASIC_FORMAT, level=logging.DEBUG, stream=sys.stdout)
     app = FastAPI(title="Storefront API", openapi_url="/openapi.json")
     if settings.connect_to_database:
-        conn = mysql.connector.connect(user='webapp', password='webbapp_secret_password',
-                                    host='adminer',
-                                    port=8080,
-                                    database='storefront')
+        logger.info('connecting to database')
+        logger.info(f'user={settings.mysql.username} password={settings.mysql.password} host={settings.mysql.hostname} port={settings.mysql.port} database={settings.mysql.database}')
+        conn = mysql.connector.MySQLConnection(user=settings.mysql.username, password=settings.mysql.password,
+                                    host=settings.mysql.hostname, port=settings.mysql.port,
+                                    database=settings.mysql.database)
+        logger.info('connected to database!')
     app.include_router(search_router, prefix="/api/v1")
 
     @app.middleware("http")

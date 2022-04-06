@@ -5,6 +5,13 @@ services:
     app:
         build: ./store-api
         restart: always
+        environment:
+        # - CONNECT_TO_DATABASE=1
+        - MYSQL__HOSTNAME=adminer
+        - MYSQL__PORT=8080
+        - MYSQL__USERNAME=webapp
+        - MYSQL__PASSWORD=webbapp_secret_password
+        - MYSQL__DATABASE=storefront
         links:
         - adminer
         ports:
@@ -17,18 +24,21 @@ services:
         command: --default-authentication-plugin=mysql_native_password
         restart: always
         environment:
-            MYSQL_ROOT_PASSWORD: my_secret_password
-            MYSQL_DATABASE: storefront
-            MYSQL_USER: webapp
-            MYSQL_PASSWORD: webbapp_secret_password
+        - MYSQL_ROOT_PASSWORD=my_secret_password
+        - MYSQL_DATABASE=storefront
+        - MYSQL_USER=webapp
+        - MYSQL_PASSWORD=webbapp_secret_password
         volumes:
         - dbdata:/var/lib/mysql
+        - ./mysql-init:/docker-entrypoint-initdb.d
 
     adminer:
         image: adminer
         restart: always
         ports:
         - 8080:8080
+        expose:
+        - 8080
 
 volumes:
     dbdata:

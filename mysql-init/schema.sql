@@ -1,0 +1,2 @@
+USE storefront;
+CREATE TABLE s (k TEXT NOT NULL, v TEXT NOT NULL, UNIQUE (k), PRIMARY KEY (k));

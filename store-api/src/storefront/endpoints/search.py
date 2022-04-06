@@ -5,7 +5,7 @@ from storefront.config import settings
 search_router = APIRouter()
 
 @search_router.get("/s")
-async def search(request: Request, q: str = '', s: int = 0, l: int = 0) -> JSONResponse:
+async def search(request: Request, q: str = '', o: int = 0, l: int = 0) -> JSONResponse:
     """
     Here is all the functionality.
     This can be profitable; consider offering higher search results for select phrases;
@@ -15,7 +15,7 @@ async def search(request: Request, q: str = '', s: int = 0, l: int = 0) -> JSONR
     
     :param request:
     :param q: query string
-    :param s: skip
+    :param o: offset
     :param l: limit
     """
     if q == '':
@@ -24,8 +24,8 @@ async def search(request: Request, q: str = '', s: int = 0, l: int = 0) -> JSONR
     if settings.connect_to_database:
         cursor = request.state.sql_conn.cursor()
         # sort by best results first
-        query_str = f"select v from t where k=:q"
+        query_str = f"select v from s where k=:q"
         cursor.execute(query_str, {"q": q})
         results = cursor.fetchall()
         return JSONResponse(status_code=200, content={'r': results})
-    return JSONResponse(status_code=200, content={})
+    return JSONResponse(status_code=200, content={'msg': 'not connecting to database'})
