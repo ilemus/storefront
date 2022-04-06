@@ -1,0 +1,34 @@
+# Use root/example as user/password credentials
+version: '3.1'
+
+services:
+    app:
+        build: ./store-api
+        restart: always
+        links:
+        - adminer
+        ports:
+        - 8000:8000
+        expose:
+        - 8000
+
+    db:
+        image: mysql
+        command: --default-authentication-plugin=mysql_native_password
+        restart: always
+        environment:
+            MYSQL_ROOT_PASSWORD: my_secret_password
+            MYSQL_DATABASE: storefront
+            MYSQL_USER: webapp
+            MYSQL_PASSWORD: webbapp_secret_password
+        volumes:
+        - dbdata:/var/lib/mysql
+
+    adminer:
+        image: adminer
+        restart: always
+        ports:
+        - 8080:8080
+
+volumes:
+    dbdata:
