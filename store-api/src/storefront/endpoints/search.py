@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
 from storefront.config import settings
 
@@ -24,8 +24,8 @@ async def search(request: Request, q: str = '', o: int = 0, l: int = 0) -> JSONR
     if settings.connect_to_database:
         cursor = request.state.sql_conn.cursor()
         # sort by best results first
-        query_str = f"select v from s where k=:q"
-        cursor.execute(query_str, {"q": q})
+        query_str = f"select v from s where k=%s"
+        cursor.execute(query_str, (q,))
         results = cursor.fetchall()
-        return JSONResponse(status_code=200, content={'r': results})
-    return JSONResponse(status_code=200, content={'msg': 'not connecting to database'})
+        return JSONResponse(status_code=status.HTTP_200_OK, content={'r': results})
+    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content="No connection to database")
