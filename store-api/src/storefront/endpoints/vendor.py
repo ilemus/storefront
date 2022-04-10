@@ -42,7 +42,7 @@ async def create_vendor(request: Request, vendor: CreateVendor) -> JSONResponse:
     if settings.connect_to_database:
         # Add try catch for exceptions (duplicate name)
         cursor = request.state.sql_conn.cursor()
-        cursor.execute('INSERT INTO vendor from vendor where vendor_name=%s', (vendor.vendor_name,))
+        cursor.execute('INSERT INTO vendor ("%s")', (vendor.vendor_name,))
         result = cursor.fetchone()
         cursor.close()
         request.state.sql_conn.commit()

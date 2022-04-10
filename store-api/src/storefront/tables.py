@@ -6,19 +6,19 @@ PARENT_TABLES = {
          'INDEX k_ind(k), '
          'PRIMARY KEY (k))',
     'vendor': 'CREATE TABLE vendor '
-              '(vendor_id INT NOT NULL, '
+              '(vendor_id INT NOT NULL AUTO_INCREMENT, '
               'vendor_name VARCHAR(32) NOT NULL, '
               'UNIQUE (vendor_id, vendor_name), '
               'INDEX vn_ind(vendor_name), '
               'PRIMARY KEY (vendor_id))',
     'item': 'CREATE TABLE item '
-            '(item_id INT NOT NULL, '
+            '(item_id INT NOT NULL AUTO_INCREMENT, '
             'item_name VARCHAR(32) NOT NULL, '
             'UNIQUE (item_id), '
             'INDEX i_ind(item_name), '
             'PRIMARY KEY (item_id))',
     'person': 'CREATE TABLE person '
-              '(person_id INT NOT NULL, '
+              '(person_id INT NOT NULL AUTO_INCREMENT, '
               'person_first_name VARCHAR(18), '
               'person_last_name VARCHAR(18), '
               'create_date DATETIME NOT NULL, '
@@ -50,7 +50,7 @@ CHILDREN_TABLES = {
                     'INDEX e_ind(email_address), '
                     'FOREIGN KEY (person_id) REFERENCES person(person_id) ON DELETE CASCADE)',
     'item_order': 'CREATE TABLE item_order '
-             '(order_id INT NOT NULL, '
+             '(order_id INT NOT NULL AUTO_INCREMENT, '
              'person_id INT, '
              'UNIQUE (order_id), '
              'PRIMARY KEY (order_id), '
