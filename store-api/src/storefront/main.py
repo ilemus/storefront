@@ -62,6 +62,7 @@ def _drop_tables(cursor, existing_table_names: set, schema: dict) -> bool:
 def update_tables(conn) -> None:
     """
     Only do this in non-production. Drops and creates all tables.
+
     :param conn: connection to database
     :return:
     """
@@ -94,7 +95,7 @@ def update_tables(conn) -> None:
 
 
 def create_app():
-    app = FastAPI(title="Storefront API", openapi_url="/openapi.json")
+    _app = FastAPI(title="Storefront API", openapi_url="/openapi.json")
     if settings.connect_to_database:
         logger.info('connecting to database')
         conn = mysql.connector.connect(user=settings.mysql.username, password=settings.mysql.password,
@@ -102,22 +103,23 @@ def create_app():
                                        database=settings.mysql.database, connect_timeout=5)
         logger.info('connected to database!')
         update_tables(conn)
-    app.include_router(search_router, prefix='/api/v1')
-    app.include_router(vendor_router, prefix='/api/v1')
+    _app.include_router(search_router, prefix='/api/v1')
+    _app.include_router(vendor_router, prefix='/api/v1')
 
-    @app.middleware("http")
+    @_app.middleware("http")
     async def db_session_middleware(request: Request, call_next):
         if settings.connect_to_database:
             request.state.sql_conn = conn
         response = await call_next(request)
         return response
 
-    @app.on_event("shutdown")
+    @_app.on_event("shutdown")
     async def shutdown():
         # cleanup
         if settings.connect_to_database:
             conn.close()
 
-    return app
+    return _app
+
 
 app = create_app()

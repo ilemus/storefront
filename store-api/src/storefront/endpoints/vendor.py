@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel
 
+from storefront.common.exceptions import DuplicateRecordException
 from storefront.config import settings
 from storefront.models.vendor import get_vendor_by_id, get_vendor_addresses, get_vendor_items
 
@@ -18,7 +19,6 @@ class AddAddress(BaseModel):
 
 
 class Item(BaseModel):
-    item_id: int
     item_name: str
 
 
@@ -32,7 +32,7 @@ async def list_vendors(request: Request) -> JSONResponse:
     Lists all vendors
     
     :param request:
-    :param q: optional query stringinstall
+    :param q: optional query string
     :param o: optional offset
     :param l: optional limit
     """
@@ -56,11 +56,18 @@ async def create_vendor(request: Request, vendor: CreateVendor) -> PlainTextResp
     """
     if settings.connect_to_database:
         # Add try catch for exceptions (duplicate name)
-        cursor = request.state.sql_conn.cursor()
-        cursor.execute('INSERT INTO vendor (vendor_name) VALUES (%s)', (vendor.vendor_name,))
-        cursor.close()
-        request.state.sql_conn.commit()
-        return PlainTextResponse(status_code=status.HTTP_201_CREATED, content="Successfully created.")
+        try:
+            cursor = request.state.sql_conn.cursor()
+            cursor.execute('SELECT vendor_id FROM vendor WHERE vendor_name=%s', (vendor.vendor_name,))
+            existing_vendor = cursor.fetchone()
+            if existing_vendor is not None:
+                raise DuplicateRecordException(f'A vendor with the name "{vendor.vendor_name}" already exists.')
+            cursor.execute('INSERT INTO vendor (vendor_name) VALUES (%s)', (vendor.vendor_name,))
+            cursor.close()
+            request.state.sql_conn.commit()
+            return PlainTextResponse(status_code=status.HTTP_201_CREATED, content="Successfully created.")
+        except DuplicateRecordException as dre:
+            return PlainTextResponse(status_code=status.HTTP_400_BAD_REQUEST, content=str(dre))
     return PlainTextResponse(status_code=status.HTTP_204_NO_CONTENT, content=NOT_CONNECTED)
 
 
@@ -106,6 +113,7 @@ async def delete_vendor(request: Request, vendor_id: int) -> PlainTextResponse:
 @vendor_router.post("/vendor/{vendor_id}/add-address")
 async def add_address(request: Request, vendor_id: int, address: AddAddress) -> PlainTextResponse:
     if settings.connect_to_database:
+        # TODO: add address already exists checks
         cursor = request.state.sql_conn.cursor()
         query = 'INSERT INTO vendor_address (vendor_id, street_address, city, zip_code, state)' \
                 ' VALUES (%s, %s, %s, %s, %s)'
@@ -134,10 +142,11 @@ async def drop_address(request: Request, vendor_id: int, address: AddAddress) ->
 @vendor_router.post("/vendor/{vendor_id}/add-item")
 async def add_item(request: Request, vendor_id: int, item: Item) -> PlainTextResponse:
     if settings.connect_to_database:
+        # TODO: add item already exists checks
         cursor = request.state.sql_conn.cursor()
-        query = 'INSERT INTO vendor_address (vendor_id, item_id, item_name)' \
-                ' VALUES (%s, %s, %s)'
-        values = (vendor_id, item.item_id, item.item_name)
+        query = 'INSERT INTO item (vendor_id, item_name)' \
+                ' VALUES (%s, %s)'
+        values = (vendor_id, item.item_name)
         cursor.execute(query, values)
         cursor.close()
         request.state.sql_conn.commit()
@@ -149,9 +158,9 @@ async def add_item(request: Request, vendor_id: int, item: Item) -> PlainTextRes
 async def drop_item(request: Request, vendor_id: int, item: Item) -> PlainTextResponse:
     if settings.connect_to_database:
         cursor = request.state.sql_conn.cursor()
-        query = 'DELETE FROM vendor_address ' \
-                'WHERE vendor_id=%s AND item_id=%s AND item_name=%s)'
-        values = (vendor_id, item.item_id, item.item_name)
+        query = 'DELETE FROM item ' \
+                'WHERE vendor_id=%s AND item_name=%s)'
+        values = (vendor_id, item.item_name)
         cursor.execute(query, values)
         cursor.close()
         request.state.sql_conn.commit()

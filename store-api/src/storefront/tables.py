@@ -61,13 +61,13 @@ CHILDREN_TABLES = {
             'FOREIGN KEY (vendor_id) REFERENCES vendor(vendor_id) ON DELETE CASCADE)',
 }
 GRAND_CHILDREN_TABLES = {
-    'order_item': 'CREATE TABLE order_detail '
-                  '(order_id INT NOT NULL, '
-                  'item_id INT, '
-                  'quantity TINYINT(1) NOT NULL, '
-                  'INDEX o_ind(order_id), '
-                  'FOREIGN KEY (item_id) REFERENCES item(item_id) ON DELETE SET NULL, '
-                  'FOREIGN KEY (order_id) REFERENCES order_request(order_id) ON DELETE NO ACTION)',
+    'order_detail': 'CREATE TABLE order_detail '
+                    '(order_id INT NOT NULL, '
+                    'item_id INT, '
+                    'quantity TINYINT(1) NOT NULL, '
+                    'INDEX o_ind(order_id), '
+                    'FOREIGN KEY (item_id) REFERENCES item(item_id) ON DELETE SET NULL, '
+                    'FOREIGN KEY (order_id) REFERENCES order_request(order_id) ON DELETE NO ACTION)',
     'order_status': 'CREATE TABLE order_status '
                     '(order_id INT NOT NULL, '
                     'status VARCHAR(16) NOT NULL, '
