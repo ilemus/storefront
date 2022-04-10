@@ -5,14 +5,50 @@ import sys
 
 from fastapi import FastAPI, Request
 from storefront.endpoints.search import search_router
+from storefront.endpoints.vendor import vendor_router
 from storefront.config import settings
-from storefront.tables import TABLES
+from storefront.tables import PARENT_TABLES, CHILDREN_TABLES, GRAND_CHILDLREN_TABLES
 
 logging.basicConfig(format=logging.BASIC_FORMAT, level=logging.DEBUG, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
 
-def update_tables(conn):
+def _create_tables(cursor, existing_table_names: set, schema: dict) -> bool:
+    changes = False
+    for key in schema.keys():
+        if key not in existing_table_names:
+            try:
+                cursor.execute(schema.get(key))
+                logger.info(f"Successfully created {key}")
+                changes = True
+            except mysql.connector.errors.ProgrammingError as pe:
+                logger.error(f'Failed to create {key} due to programming error: {str(pe)}')
+            except mysql.connector.errors.DatabaseError as de:
+                logger.error(f'Failed to create {key} due to DB error: {str(de)}')
+    return changes
+
+
+def _drop_tables(cursor, existing_table_names: set, schema: dict) -> bool:
+    changes = False
+    for key in schema.keys():
+        if key in existing_table_names:
+            try:
+                cursor.execute(f'DROP TABLE {key}')
+                logger.info(f"Successfully dropped {key}")
+                changes = True
+            except mysql.connector.errors.ProgrammingError as pe:
+                logger.error(f'Failed to create {key} due to programming error: {str(pe)}')
+            except mysql.connector.errors.DatabaseError as de:
+                logger.error(f'Failed to create {key} due to DB error: {str(de)}')
+    return changes
+
+
+def update_tables(conn) -> None:
+    """
+    Only do this in non-production. Drops and creates all tables.
+    :param conn: connection to database
+    :return:
+    """
     cursor = conn.cursor()
     cursor.execute('SHOW TABLES;')
     table_results = cursor.fetchall()
@@ -20,11 +56,19 @@ def update_tables(conn):
     for table in table_results:
         table_names.add(table[0])
     changes = False
-    for key in TABLES.keys():
-        if key not in table_names:
-            cursor.execute(TABLES.get(key))
-            logger.info(f"Successfully create {key}")
-            changes = True
+    # Drop tables from lowest to highest
+    changes = _drop_tables(cursor, table_names, GRAND_CHILDLREN_TABLES) or changes
+    changes = _drop_tables(cursor, table_names, CHILDREN_TABLES) or changes
+    changes = _drop_tables(cursor, table_names, PARENT_TABLES) or changes
+    if changes:
+        conn.commit()
+        logger.info('Dropped existing tables')
+    changes = False
+    table_names.clear()
+    # Create tables from highest to lowest
+    changes = _create_tables(cursor, table_names, PARENT_TABLES) or changes
+    changes = _create_tables(cursor, table_names, CHILDREN_TABLES) or changes
+    changes = _create_tables(cursor, table_names, GRAND_CHILDLREN_TABLES) or changes
     if changes:
         conn.commit()
         logger.info('Created missing tables')
@@ -40,7 +84,8 @@ def create_app():
                                         database=settings.mysql.database, connect_timeout=5)
         logger.info('connected to database!')
         update_tables(conn)
-    app.include_router(search_router, prefix="/api/v1")
+    app.include_router(search_router, prefix='/api/v1')
+    app.include_router(vendor_router, prefix='/api/v1')
 
     @app.middleware("http")
     async def db_session_middleware(request: Request, call_next):
