@@ -31,12 +31,13 @@ def _create_tables(cursor, existing_table_names: set, schema: dict) -> bool:
 def _drop_all_tables(cursor):
     """
     WARNING DROPS ALL TABLES AND ALL DATA
+    Don't know if this works or not
     :param cursor:
     :return:
     """
     unset_fk_checks = 'SET FOREIGN_KEY_CHECKS = 0'
     query = "SELECT concat('DROP TABLE IF EXISTS `', table_name, '`;') " \
-            "FROM information_schema.tables WHERE table_schema = 'MyDatabaseName'"
+            f"FROM information_schema.TABLES WHERE table_schema = '{settings.mysql.database}'"
     set_fk_checks = 'SET FOREIGN_KEY_CHECKS = 1'
     cursor.execute(unset_fk_checks)
     cursor.execute(query)
@@ -71,7 +72,7 @@ def update_tables(conn) -> None:
     for table in table_results:
         table_names.add(table[0])
     changes = False
-    '''
+
     # Drop tables from lowest to highest
     changes = _drop_tables(cursor, table_names, GRAND_CHILDREN_TABLES) or changes
     changes = _drop_tables(cursor, table_names, CHILDREN_TABLES) or changes
@@ -80,10 +81,6 @@ def update_tables(conn) -> None:
         conn.commit()
         logger.info('Dropped existing tables')
     changes = False
-    '''
-    _drop_all_tables(cursor)
-    conn.commit()
-    logger.info('DROPPED ALL TABLES')
 
     table_names.clear()
     # Create tables from highest to lowest
@@ -101,8 +98,8 @@ def create_app():
     if settings.connect_to_database:
         logger.info('connecting to database')
         conn = mysql.connector.connect(user=settings.mysql.username, password=settings.mysql.password,
-                                        host=settings.mysql.hostname, port=settings.mysql.port,
-                                        database=settings.mysql.database, connect_timeout=5)
+                                       host=settings.mysql.hostname, port=settings.mysql.port,
+                                       database=settings.mysql.database, connect_timeout=5)
         logger.info('connected to database!')
         update_tables(conn)
     app.include_router(search_router, prefix='/api/v1')
