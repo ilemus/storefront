@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel
 
 from storefront.config import settings
-from storefront.models.vendor import get_vendor_by_id, get_vendor_addresses
+from storefront.models.vendor import get_vendor_by_id, get_vendor_addresses, get_vendor_items
 
 
 class CreateVendor(BaseModel):
@@ -15,6 +15,11 @@ class AddAddress(BaseModel):
     city: str
     zip_code: int
     state: str
+
+
+class Item(BaseModel):
+    item_id: int
+    item_name: str
 
 
 NOT_CONNECTED = 'Not connected to database'
@@ -71,10 +76,12 @@ async def get_vendor(request: Request, vendor_id: int) -> JSONResponse:
         cursor = request.state.sql_conn.cursor()
         vendor_name = get_vendor_by_id(cursor, vendor_id)
         addresses = get_vendor_addresses(cursor, vendor_id)
+        items = get_vendor_items(cursor, vendor_id)
         cursor.close()
         return JSONResponse(status_code=status.HTTP_200_OK, content={
             'vendor_name': vendor_name,
-            'addresses': addresses
+            'addresses': addresses,
+            'items': items
         })
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=NOT_CONNECTED)
 
@@ -122,3 +129,34 @@ async def drop_address(request: Request, vendor_id: int, address: AddAddress) ->
         request.state.sql_conn.commit()
         return PlainTextResponse(status_code=status.HTTP_201_CREATED, content="Successfully dropped.")
     return PlainTextResponse(status_code=status.HTTP_204_NO_CONTENT, content=NOT_CONNECTED)
+
+
+@vendor_router.post("/vendor/{vendor_id}/add-item")
+async def add_item(request: Request, vendor_id: int, item: Item) -> PlainTextResponse:
+    if settings.connect_to_database:
+        cursor = request.state.sql_conn.cursor()
+        query = 'INSERT INTO vendor_address (vendor_id, item_id, item_name)' \
+                ' VALUES (%s, %s, %s)'
+        values = (vendor_id, item.item_id, item.item_name)
+        cursor.execute(query, values)
+        cursor.close()
+        request.state.sql_conn.commit()
+        return PlainTextResponse(status_code=status.HTTP_201_CREATED, content="Successfully added.")
+    return PlainTextResponse(status_code=status.HTTP_204_NO_CONTENT, content=NOT_CONNECTED)
+
+
+@vendor_router.post("/vendor/{vendor_id}/drop-item")
+async def drop_item(request: Request, vendor_id: int, item: Item) -> PlainTextResponse:
+    if settings.connect_to_database:
+        cursor = request.state.sql_conn.cursor()
+        query = 'DELETE FROM vendor_address ' \
+                'WHERE vendor_id=%s AND item_id=%s AND item_name=%s)'
+        values = (vendor_id, item.item_id, item.item_name)
+        cursor.execute(query, values)
+        cursor.close()
+        request.state.sql_conn.commit()
+        return PlainTextResponse(status_code=status.HTTP_201_CREATED, content="Successfully dropped.")
+    return PlainTextResponse(status_code=status.HTTP_204_NO_CONTENT, content=NOT_CONNECTED)
+
+# Item specific endpoints ??
+# @vendor_router.post("/item")

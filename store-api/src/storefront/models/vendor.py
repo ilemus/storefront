@@ -18,7 +18,7 @@ def get_vendor_addresses(cursor, vendor_id: int) -> List[Dict]:
     :param vendor_id:
     :return:
     """
-    cursor.execute('SELECT street_address, city, zip_code, state from vendor_address where vendor_id=%s', (vendor_id,))
+    cursor.execute('SELECT street_address, city, zip_code, state FROM vendor_address WHERE vendor_id=%s', (vendor_id,))
     addresses = cursor.fetchall()
     if len(addresses) == 0:
         return list()
@@ -29,3 +29,21 @@ def get_vendor_addresses(cursor, vendor_id: int) -> List[Dict]:
         'state': address[3]
     } for address in addresses]
     return addresses
+
+
+def get_vendor_items(cursor, vendor_id: int) -> List[Dict]:
+    """
+    Get a list of items sold by the vendor
+    :param cursor:
+    :param vendor_id:
+    :return:
+    """
+    cursor.execute('SELECT item_id, item_name FROM item WHERE vendor_id=%s', (vendor_id,))
+    items = cursor.fetchall()
+    if len(items) == 0:
+        return list()
+    items = [{
+        'item_id': item[0],
+        'item_name': item[1]
+    } for item in items]
+    return items
