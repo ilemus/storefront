@@ -1,0 +1,3 @@
+
+class NoRecordException(BaseException):
+    pass
