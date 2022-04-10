@@ -58,7 +58,7 @@ CHILDREN_TABLES = {
             'UNIQUE (item_id), '
             'INDEX i_ind(item_name), '
             'PRIMARY KEY (item_id), '
-            'FOREIGN KEY vendor_id REFERENCES vendor(vendor_id) ON DELETE CASCADE)',
+            'FOREIGN KEY (vendor_id) REFERENCES vendor(vendor_id) ON DELETE CASCADE)',
 }
 GRAND_CHILDREN_TABLES = {
     'order_item': 'CREATE TABLE order_detail '
