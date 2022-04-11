@@ -4,6 +4,7 @@ import mysql.connector
 import sys
 
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from storefront.endpoints.search import search_router
 from storefront.endpoints.vendor import vendor_router
 from storefront.config import settings

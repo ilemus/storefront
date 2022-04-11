@@ -13,7 +13,7 @@ services:
         - MYSQL__PASSWORD=webbapp_secret_password
         - MYSQL__DATABASE=storefront
         ports:
-        - 8000:8000
+        - "8000:8000"
         expose:
         - 8000
 
@@ -27,11 +27,11 @@ services:
         - MYSQL_USER=webapp
         - MYSQL_PASSWORD=webbapp_secret_password
         ports: 
-        - 3306:3306
-        - 33060:33060
+        - "3306:3306"
+        - "33060:33060"
         volumes:
         - dbdata:/var/lib/mysql
-        - ./mysql-init:/docker-entrypoint-initdb.d
+        # Useless: - ./mysql-init:/docker-entrypoint-initdb.d
 
  #   adminer:
  #       image: adminer

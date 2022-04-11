@@ -38,7 +38,7 @@ async def list_vendors(request: Request) -> JSONResponse:
     """
     if settings.connect_to_database:
         cursor = request.state.sql_conn.cursor()
-        cursor.execute('SELECT * from vendor')
+        cursor.execute('SELECT vendor_id, vendor_name from vendor')
         results = cursor.fetchall()
         vendors = [{'id': result[0], 'name': result[1]} for result in results]
         cursor.close()
