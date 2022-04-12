@@ -1,5 +1,6 @@
 from pydantic import BaseModel, BaseSettings
 
+
 class MySQLConnection(BaseModel):
     hostname: str = 'adminer'
     port: int = 8080
@@ -11,6 +12,8 @@ class MySQLConnection(BaseModel):
 class Settings(BaseSettings):
     mysql: MySQLConnection = ()
     connect_to_database: int = 0
+    jwt_secret_key: str
+    jwt_algorithm: str
 
     class Config:
         env_nested_delimiter = '__'

@@ -1,11 +1,12 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Request, status, HTTPException, Depends
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel
 
 from storefront.common.exceptions import DuplicateRecordException
 from storefront.config import settings
+from storefront.endpoints.oauth2 import get_current_active_user
 from storefront.models.person import get_person_by_id
 
 """
@@ -27,6 +28,10 @@ class Address(BaseModel):
     city: str
     zip_code: int
     state: str
+
+
+class Password(BaseModel):
+    password: str
 
 
 NOT_CONNECTED = 'Not connected to database'
@@ -60,18 +65,16 @@ async def create_person(request: Request, person: Person) -> PlainTextResponse:
     :param person: object of person info
     """
     if settings.connect_to_database:
-        # Add try catch for exceptions (duplicate name)
+        # try catch for exceptions (duplicate email)
         try:
             cursor = request.state.sql_conn.cursor()
             query = 'SELECT person_id FROM person ' \
-                    'WHERE person_first_name=%s AND person_last_name=%s AND person_email=%s'
-            values = (person.person_first_name, person.person_last_name, person.person_email)
+                    'WHERE person_email=%s'
+            values = (person.person_email,)
             cursor.execute(query, values)
             existing_person = cursor.fetchone()
             if existing_person is not None:
-                raise DuplicateRecordException(f'A person with the name '
-                                               f'"{person.person_first_name} {person.person_last_name}" already exists '
-                                               f'with email {person.person_email}.')
+                raise DuplicateRecordException(f'An account with email {person.person_email} already exists.')
             query = 'INSERT INTO person (person_first_name, person_last_name, person_email, created_date) ' \
                     'VALUES (%s, %s, %s, %s)'
             values = (person.person_first_name, person.person_last_name, person.person_email, datetime.utcnow())
@@ -106,11 +109,13 @@ async def get_person(request: Request, person_id: int) -> JSONResponse:
 
 
 @person_router.delete("/person/{person_id}")
-async def delete_person(request: Request, person_id: int) -> PlainTextResponse:
+async def delete_person(request: Request, person_id: int,
+                        current_user: str = Depends(get_current_active_user)) -> PlainTextResponse:
     """
     Delete person
 
     :param request:
+    :param current_user: email of current requesting user
     :param person_id: person id
     """
     if settings.connect_to_database:
@@ -123,7 +128,8 @@ async def delete_person(request: Request, person_id: int) -> PlainTextResponse:
 
 
 @person_router.post("/person/{person_id}/add-address")
-async def add_address(request: Request, person_id: int, address: Address) -> PlainTextResponse:
+async def add_address(request: Request, person_id: int, address: Address,
+                      current_user: str = Depends(get_current_active_user)) -> PlainTextResponse:
     if settings.connect_to_database:
         # TODO: add address already exists checks
         cursor = request.state.sql_conn.cursor()
@@ -138,7 +144,8 @@ async def add_address(request: Request, person_id: int, address: Address) -> Pla
 
 
 @person_router.post("/person/{person_id}/drop-address")
-async def drop_address(request: Request, person_id: int, address: Address) -> PlainTextResponse:
+async def drop_address(request: Request, person_id: int, address: Address,
+                       current_user: str = Depends(get_current_active_user)) -> PlainTextResponse:
     if settings.connect_to_database:
         cursor = request.state.sql_conn.cursor()
         query = 'DELETE FROM person_address ' \
@@ -148,6 +155,49 @@ async def drop_address(request: Request, person_id: int, address: Address) -> Pl
         cursor.close()
         request.state.sql_conn.commit()
         return PlainTextResponse(status_code=status.HTTP_201_CREATED, content="Successfully dropped.")
+    return PlainTextResponse(status_code=status.HTTP_204_NO_CONTENT, content=NOT_CONNECTED)
+
+
+@person_router.post("/person/{person_id}/create-password")
+async def create_password(request: Request, person_id: int, password: Password) -> PlainTextResponse:
+    if settings.connect_to_database:
+        cursor = request.state.sql_conn.cursor()
+
+        cursor.execute('SELECT person_id WHERE person_id=%s', (person_id,))
+        existing_password = cursor.fetchone()
+        if existing_password is not None:
+            cursor.close()
+            return PlainTextResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                     content="Password already exists for this person")
+
+        query = 'INSERT INTO person_login (person_id, password) VALUES (%s, %s)'
+        values = (person_id, password.password)
+        cursor.execute(query, values)
+        cursor.close()
+        request.state.sql_conn.commit()
+        return PlainTextResponse(status_code=status.HTTP_201_CREATED, content="Successfully added.")
+    return PlainTextResponse(status_code=status.HTTP_204_NO_CONTENT, content=NOT_CONNECTED)
+
+
+@person_router.post("/person/{person_id}/change-password")
+async def change_password(request: Request, person_id: int, password: Password,
+                          current_user: str = Depends(get_current_active_user)) -> PlainTextResponse:
+    if settings.connect_to_database:
+        cursor = request.state.sql_conn.cursor()
+
+        cursor.execute('SELECT person_id FROM person_login WHERE person_id=%s', (person_id,))
+        existing_password = cursor.fetchone()
+        if existing_password is not None:
+            cursor.close()
+            return PlainTextResponse(status_code=status.HTTP_400_BAD_REQUEST,
+                                     content="No password associated to this person")
+
+        query = 'UPDATE person_login set password=%s WHERE person_id=%s'
+        values = (password.password, person_id)
+        cursor.execute(query, values)
+        cursor.close()
+        request.state.sql_conn.commit()
+        return PlainTextResponse(status_code=status.HTTP_204_NO_CONTENT, content="Successfully updated.")
     return PlainTextResponse(status_code=status.HTTP_204_NO_CONTENT, content=NOT_CONNECTED)
 
 

@@ -12,6 +12,8 @@ services:
         - MYSQL__USERNAME=webapp
         - MYSQL__PASSWORD=webbapp_secret_password
         - MYSQL__DATABASE=storefront
+        - JWT_SECRET_KEY=d005cf783bde584a9106853f2ab04dc859031b051f3a2e7de3ee46e30a8b0008
+        - JWT_ALGORITHM=HS256
         ports:
         - "8000:8000"
         expose:
