@@ -8,6 +8,7 @@ PARENT_TABLES = {
     'vendor': 'CREATE TABLE vendor '
               '(vendor_id INT NOT NULL AUTO_INCREMENT, '
               'vendor_name VARCHAR(32) NOT NULL, '
+              'created_date DATETIME NOT NULL, '
               'UNIQUE (vendor_id, vendor_name), '
               'INDEX vn_ind(vendor_name), '
               'PRIMARY KEY (vendor_id))',
@@ -15,8 +16,9 @@ PARENT_TABLES = {
               '(person_id INT NOT NULL AUTO_INCREMENT, '
               'person_first_name VARCHAR(18), '
               'person_last_name VARCHAR(18), '
-              'create_date DATETIME NOT NULL, '
-              'UNIQUE (person_id), '
+              'person_email VARCHAR(64), '
+              'created_date DATETIME NOT NULL, '
+              'UNIQUE (person_id, person_email), '
               'INDEX pid_ind(person_id), '
               'PRIMARY KEY (person_id))',
 }
@@ -39,9 +41,8 @@ CHILDREN_TABLES = {
                       'FOREIGN KEY (person_id) REFERENCES person(person_id) ON DELETE CASCADE)',
     'person_login': 'CREATE TABLE person_login '
                     '(person_id INT NOT NULL, '
-                    'email_address VARCHAR(64) NOT NULL, '
                     'password VARCHAR(64), '
-                    'INDEX e_ind(email_address), '
+                    'INDEX pid_ind(person_id), '
                     'FOREIGN KEY (person_id) REFERENCES person(person_id) ON DELETE CASCADE)',
     'order_request': 'CREATE TABLE order_request '
                      '(order_id INT NOT NULL AUTO_INCREMENT, '

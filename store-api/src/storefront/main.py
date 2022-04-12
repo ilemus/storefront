@@ -4,7 +4,8 @@ import mysql.connector
 import sys
 
 from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
+
+from storefront.endpoints.person import person_router
 from storefront.endpoints.search import search_router
 from storefront.endpoints.vendor import vendor_router
 from storefront.config import settings
@@ -106,6 +107,7 @@ def create_app():
         update_tables(conn)
     _app.include_router(search_router, prefix='/api/v1')
     _app.include_router(vendor_router, prefix='/api/v1')
+    _app.include_router(person_router, prefix='/api/v1')
 
     @_app.middleware("http")
     async def db_session_middleware(request: Request, call_next):

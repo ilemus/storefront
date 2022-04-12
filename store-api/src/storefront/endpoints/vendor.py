@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel
@@ -32,9 +34,6 @@ async def list_vendors(request: Request) -> JSONResponse:
     Lists all vendors
     
     :param request:
-    :param q: optional query string
-    :param o: optional offset
-    :param l: optional limit
     """
     if settings.connect_to_database:
         cursor = request.state.sql_conn.cursor()
@@ -62,7 +61,8 @@ async def create_vendor(request: Request, vendor: CreateVendor) -> PlainTextResp
             existing_vendor = cursor.fetchone()
             if existing_vendor is not None:
                 raise DuplicateRecordException(f'A vendor with the name "{vendor.vendor_name}" already exists.')
-            cursor.execute('INSERT INTO vendor (vendor_name) VALUES (%s)', (vendor.vendor_name,))
+            values = (vendor.vendor_name, datetime.utcnow())
+            cursor.execute('INSERT INTO vendor (vendor_name, created_date) VALUES (%s, %s)', values)
             cursor.close()
             request.state.sql_conn.commit()
             return PlainTextResponse(status_code=status.HTTP_201_CREATED, content="Successfully created.")
