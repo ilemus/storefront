@@ -2,6 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Request, status, HTTPException, Depends
 from fastapi.responses import JSONResponse, PlainTextResponse
+from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from storefront.common.exceptions import DuplicateRecordException
@@ -36,6 +37,7 @@ class Password(BaseModel):
 
 NOT_CONNECTED = 'Not connected to database'
 person_router = APIRouter()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @person_router.get("/person")
@@ -163,7 +165,7 @@ async def create_password(request: Request, person_id: int, password: Password) 
     if settings.connect_to_database:
         cursor = request.state.sql_conn.cursor()
 
-        cursor.execute('SELECT person_id WHERE person_id=%s', (person_id,))
+        cursor.execute('SELECT person_id FROM person_login WHERE person_id=%s', (person_id,))
         existing_password = cursor.fetchone()
         if existing_password is not None:
             cursor.close()
@@ -171,7 +173,7 @@ async def create_password(request: Request, person_id: int, password: Password) 
                                      content="Password already exists for this person")
 
         query = 'INSERT INTO person_login (person_id, password) VALUES (%s, %s)'
-        values = (person_id, password.password)
+        values = (person_id, pwd_context.hash(password.password))
         cursor.execute(query, values)
         cursor.close()
         request.state.sql_conn.commit()
@@ -193,7 +195,7 @@ async def change_password(request: Request, person_id: int, password: Password,
                                      content="No password associated to this person")
 
         query = 'UPDATE person_login set password=%s WHERE person_id=%s'
-        values = (password.password, person_id)
+        values = (pwd_context.hash(password.password), person_id)
         cursor.execute(query, values)
         cursor.close()
         request.state.sql_conn.commit()
