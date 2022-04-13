@@ -1,8 +1,11 @@
+import logging
 from typing import List, Dict, Optional
 
 from pydantic import BaseModel
 
 from storefront.common.exceptions import NoRecordException
+
+logger = logging.getLogger(__name__)
 
 
 class Person(BaseModel):
@@ -13,27 +16,28 @@ class Person(BaseModel):
 
 
 def get_person_by_id(cursor, person_id: int) -> Dict[str, str]:
-    cursor.execute('SELECT person_first_name, person_last_name, person_email from vendor where person_id=%s',
+    cursor.execute('SELECT person_first_name, person_last_name, person_email FROM person WHERE person_id=%s',
                    (person_id,))
     result = cursor.fetchone()
+    logger.info(f'result is {result}')
     if result is None:
         raise NoRecordException(f'Cannot find vendor for id: {id}')
     return {
-        'first_name': result[0][0],
-        'last_name': result[0][1],
-        'person_email': result[0][1]
+        'first_name': result[0],
+        'last_name': result[1],
+        'person_email': result[2]
     }
 
 
 def get_person_by_email(cursor, person_email: str) -> Person:
-    cursor.execute('SELECT person_first_name, person_last_name, person_id from vendor where person_email=%s',
+    cursor.execute('SELECT person_first_name, person_last_name, person_id FROM person WHERE person_email=%s',
                    (person_email,))
     result = cursor.fetchone()
     if result is None:
         raise NoRecordException(f'Cannot find vendor for id: {id}')
-    return Person(person_id=result[0][2],
-                  person_first_name=result[0][0],
-                  person_last_name=result[0][1],
+    return Person(person_id=result[2],
+                  person_first_name=result[0],
+                  person_last_name=result[1],
                   person_email=person_email)
 
 

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from storefront.common.exceptions import DuplicateRecordException
 from storefront.config import settings
 from storefront.endpoints.oauth2 import get_current_active_user
-from storefront.models.person import get_person_by_id
+from storefront.models.person import get_person_by_id, get_person_addresses
 
 """
 person_id INT NOT NULL AUTO_INCREMENT, '
@@ -101,7 +101,7 @@ async def get_person(request: Request, person_id: int) -> JSONResponse:
         cursor = request.state.sql_conn.cursor()
         # need to update by creating model
         person_info = get_person_by_id(cursor, person_id)
-        addresses = get_person_by_id(cursor, person_id)
+        addresses = get_person_addresses(cursor, person_id)
         cursor.close()
         return JSONResponse(status_code=status.HTTP_200_OK, content={
             **person_info,
